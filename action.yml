@@ -1,0 +1,44 @@
+name: 'Setup atl'
+description: 'Install the atl CLI for Atlassian Confluence and Jira on a GitHub Actions runner'
+author: 'mazuninky'
+
+branding:
+  icon: 'terminal'
+  color: 'blue'
+
+inputs:
+  version:
+    description: |
+      atl version to install. Accepts a calendar version (e.g. "2026.18.4"),
+      a tag (e.g. "v2026.18.4"), or "latest" to resolve the most recent
+      release via the GitHub API.
+    required: false
+    default: 'latest'
+  token:
+    description: |
+      GitHub token used to query the releases API and download release
+      assets. Defaults to the workflow token; override only if rate limits
+      bite (e.g. heavy fan-out across forks).
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  version:
+    description: 'The resolved atl version that was installed (e.g. "2026.18.4")'
+    value: ${{ steps.install.outputs.version }}
+  bin-path:
+    description: 'Absolute path to the directory containing the atl binary (already on PATH)'
+    value: ${{ steps.install.outputs.bin-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install atl
+      id: install
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+        GH_TOKEN: ${{ inputs.token }}
+        RUNNER_OS_INPUT: ${{ runner.os }}
+        RUNNER_ARCH_INPUT: ${{ runner.arch }}
+      run: bash "$GITHUB_ACTION_PATH/install.sh"
