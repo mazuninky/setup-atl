@@ -7,14 +7,22 @@ GitHub Action that installs [`atl`](https://github.com/mazuninky/atl) — the un
 ```yaml
 - uses: mazuninky/setup-atl@v1
   with:
-    version: latest          # or a specific version like "2026.18.4"
+    version: latest          # or a specific version like "2026.47.2"
 
 - run: atl --version
-- run: atl jira issue list --jql "assignee = currentUser()" --format json
+# A runner has no atl profile: write one without the token (see Authentication).
+- run: |
+    cat > atl.toml <<'EOF'
+    default_profile = "ci"
+
+    [profiles.ci.jira]
+    domain = "https://your-site.atlassian.net"
+    email = "you@example.com"
+    EOF
+- run: atl jira search "assignee = currentUser()" -F json
   env:
+    ATL_CONFIG: atl.toml
     ATL_API_TOKEN: ${{ secrets.ATL_TOKEN }}
-    ATL_EMAIL:     ${{ secrets.ATL_EMAIL }}
-    ATL_SITE:      your-site.atlassian.net
 ```
 
 Pin to a specific version for reproducible builds:
@@ -22,21 +30,21 @@ Pin to a specific version for reproducible builds:
 ```yaml
 - uses: mazuninky/setup-atl@v1
   with:
-    version: 2026.18.4
+    version: 2026.47.2
 ```
 
 ## Inputs
 
 | Name      | Required | Default          | Description |
 |-----------|----------|------------------|-------------|
-| `version` | no       | `latest`         | Calendar version (`2026.18.4`), tag (`v2026.18.4`), or `latest`. |
+| `version` | no       | `latest`         | Calendar version (`2026.47.2`), tag (`v2026.47.2`), or `latest`. |
 | `token`   | no       | `${{ github.token }}` | Token used to query the GitHub API and download release assets. |
 
 ## Outputs
 
 | Name       | Description |
 |------------|-------------|
-| `version`  | Resolved version that was installed (e.g. `2026.18.4`). |
+| `version`  | Resolved version that was installed (e.g. `2026.47.2`). |
 | `bin-path` | Absolute path to the directory containing the `atl` binary. |
 
 ## Supported runners
@@ -44,21 +52,22 @@ Pin to a specific version for reproducible builds:
 | OS              | Arch  | Notes |
 |-----------------|-------|-------|
 | `ubuntu-*`      | x86_64 | `x86_64-unknown-linux-gnu` |
+| `ubuntu-*-arm`  | arm64  | `aarch64-unknown-linux-gnu` (atl 2026.47.2 and later) |
 | `macos-*`       | arm64  | `aarch64-apple-darwin` (M1+) |
+| `macos-*-intel` | x86_64 | `x86_64-apple-darwin` (atl 2026.47.2 and later) |
 | `windows-*`     | x86_64 | `x86_64-pc-windows-msvc` |
-
-`atl` does not currently ship Linux arm64 or macOS x86_64 builds, so the action will fail fast on those runners.
 
 ## Authentication
 
-`atl` reads the API token from the `ATL_API_TOKEN` environment variable in headless environments — the OS keyring is unavailable on runners. Pass your token through workflow secrets:
+The OS keyring is unavailable on runners. `atl` takes the site and the email from a profile in its config file and the API token from the `ATL_API_TOKEN` environment variable, which overrides the profile. Point `ATL_CONFIG` at a config file with the profile (as in [Usage](#usage)), keep the token out of it, and pass the token through workflow secrets:
 
 ```yaml
 env:
+  ATL_CONFIG: atl.toml
   ATL_API_TOKEN: ${{ secrets.ATL_TOKEN }}
-  ATL_EMAIL:     ${{ secrets.ATL_EMAIL }}
-  ATL_SITE:      your-site.atlassian.net
 ```
+
+`ATL_PROFILE` picks a profile other than `default_profile`.
 
 ## How it works
 
