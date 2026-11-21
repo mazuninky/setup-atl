@@ -32,7 +32,7 @@ else
     TAG="v${INPUT_VERSION#v}"
 fi
 VERSION="${TAG#v}"
-if ! printf '%s' "${VERSION}" | grep -Eq '^[0-9]{4}\.(0[1-9]|[1-4][0-9]|5[0-3])\.[1-9][0-9]*$'; then
+if ! printf '%s' "${VERSION}" | grep -Eq '^[0-9]{4}\.([1-9]|[1-4][0-9]|5[0-3])\.[1-9][0-9]*$'; then
     err "Version '${INPUT_VERSION}' (resolved to '${VERSION}') is not in YYYY.WW.BUILD format"
     exit 1
 fi
@@ -48,8 +48,18 @@ case "${RUNNER_OS_INPUT}-${RUNNER_ARCH_INPUT}" in
         ARCHIVE_EXT="tar.gz"
         BIN="atl"
         ;;
+    Linux-ARM64)
+        TARGET="aarch64-unknown-linux-gnu"
+        ARCHIVE_EXT="tar.gz"
+        BIN="atl"
+        ;;
     macOS-ARM64)
         TARGET="aarch64-apple-darwin"
+        ARCHIVE_EXT="tar.gz"
+        BIN="atl"
+        ;;
+    macOS-X64)
+        TARGET="x86_64-apple-darwin"
         ARCHIVE_EXT="tar.gz"
         BIN="atl"
         ;;
@@ -59,7 +69,7 @@ case "${RUNNER_OS_INPUT}-${RUNNER_ARCH_INPUT}" in
         BIN="atl.exe"
         ;;
     *)
-        err "Unsupported runner platform: ${RUNNER_OS_INPUT}/${RUNNER_ARCH_INPUT}. atl ships builds for Linux x64, macOS arm64, and Windows x64."
+        err "Unsupported runner platform: ${RUNNER_OS_INPUT}/${RUNNER_ARCH_INPUT}. atl ships builds for Linux x64 and arm64, macOS arm64 and x64, and Windows x64."
         exit 1
         ;;
 esac
